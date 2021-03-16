@@ -1,27 +1,24 @@
-Vue.config.devtools = true;
 <template>
   <div class="container">
     <div class="display-split">
       <div class="display-left">
         <div class="memolist">
-          <ul
-            v-for="memo in memos"
-            v-bind:key="memo.id"
-            @click="editMemo(memo)"
-          >
-            <li>{{ memo.content[0] }}</li>
+          <ul v-for="memo in memos" v-bind:key="memo.id">
+            <li @click="editMemo(memo)">
+              {{ memo.content[0] }}
+            </li>
           </ul>
-          <p v-show="showMemo == false || memos == ''">
+          <p v-show="!showMemo || memos === ''">
             <button @click="addMemo">+</button>
           </p>
         </div>
       </div>
       <div class="display-right">
-        <div class="detail" v-show="detail.content !== '' && showMemo">
+        <div class="detail" v-show="showMemo">
           <textarea v-model="detail.content"></textarea>
           <div>
-            <button @click="updateMemo(detail.id)">Edit</button>
-            <button @click="deleteMemo(detail.id)">Delete</button>
+            <button @click="updateMemo(detail.id)">更新</button>
+            <button @click="deleteMemo(detail.id)">削除</button>
           </div>
         </div>
       </div>
@@ -30,47 +27,55 @@ Vue.config.devtools = true;
 </template>
 
 <script>
-let nextMemoId = 0;
-
 export default {
   data: function() {
     return {
       memos: [],
+      memoId: 0,
       detail: { content: "" },
       showMemo: true
     };
   },
   mounted() {
     const getjson = localStorage.getItem("memos");
-    console.log(getjson);
-    if (getjson) {
-      try {
-        this.memos = JSON.parse(getjson);
-      } catch (e) {
-        localStorage.removeItem("memos");
-      }
-    }
+    getjson
+      ? (this.memos = JSON.parse(getjson))
+      : localStorage.removeItem("memos");
+    this.showMemo = false;
   },
   methods: {
     addMemo() {
+      const ids = [];
+      this.memos.forEach(memo => {
+        ids.push(memo.id);
+      });
+      ids.length === 0
+        ? (this.memoId = 0)
+        : (this.memoId = Math.max(...ids) + 1);
       this.memos.push({
-        id: nextMemoId++,
+        id: this.memoId,
         content: ["新規メモ"]
       });
       this.saveMemo();
       this.showMemo = false;
     },
     editMemo(memo) {
-      this.showMemo = true;
-      this.detail = memo;
-      memo.content = memo.content.join("\n");
+      if (!this.showMemo) {
+        this.showMemo = true;
+        this.detail = { ...memo };
+        this.detail.content = this.detail.content.join("\n");
+      }
     },
     updateMemo(detailId) {
-      this.memos = this.memos.filter(memo => memo.id !== detailId);
-      this.detail.content = this.detail.content.split("\n");
-      this.memos.unshift(this.detail);
-      this.saveMemo();
-      this.showMemo = false;
+      if (this.detail.content) {
+        this.memos = this.memos.map(({ content, ...rests }) => ({
+          ...rests,
+          content:
+            rests.id === detailId ? this.detail.content.split("\n") : content
+        }));
+        this.saveMemo();
+        this.showMemo = false;
+      }
     },
     deleteMemo(detailId) {
       this.memos = this.memos.filter(memo => memo.id !== detailId);
