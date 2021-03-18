@@ -43,17 +43,16 @@ export default {
       : localStorage.removeItem("memos");
     this.showMemo = false;
   },
+  computed: {
+    nextId() {
+      const ids = this.memos.map(memo => memo.id);
+      return ids.length === 0 ? 0 : Math.max(...ids) + 1;
+    }
+  },
   methods: {
     addMemo() {
-      const ids = [];
-      this.memos.forEach(memo => {
-        ids.push(memo.id);
-      });
-      ids.length === 0
-        ? (this.memoId = 0)
-        : (this.memoId = Math.max(...ids) + 1);
       this.memos.push({
-        id: this.memoId,
+        id: this.nextId,
         content: ["新規メモ"]
       });
       this.saveMemo();
